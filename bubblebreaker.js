@@ -1,27 +1,39 @@
-let bubbleColorPalette = ["red", "green", "blue", "yellow"];
+let bubbleColorPalette = ["red", "blue", "yellow"];
 let backgroundColor = "turquoise";
-let numberOfRows = 10;
-let numberOfColumns = 15;
+const numberOfRows = 10;
+const numberOfColumns = 15;
 
 let playingField = document.getElementById("playingfield");
-let fieldWidth = parseInt(window.getComputedStyle(playingField).width);
-let fieldHeight = parseInt(window.getComputedStyle(playingField).height);
-
+document.getElementById("new-game").addEventListener('click', newGame);
 let bubbleRadius = (100 / numberOfColumns) / 2;
+
+let bubblesArray = [];
+let score = 0;
+let colorBlock = new Set();
+let colorClicked = "";
 
 newGame();
 
 function newGame() {
+
+    // Initial settings
+    score = 0;
+    document.getElementById("score").innerHTML = score;
+    colorBlock = new Set();
+    colorClicked = "";
+    playingField.innerHTML = "";
+
+    // Generating bubbles
     for (let col = 0; col < numberOfColumns; col++) {
-        let fieldColumn = [];
-        let xCoordinate = bubbleRadius * (col * 2 + 1);
+        let xCoordinate = bubbleRadius * (col * 2 + 1); //for visual representation
+
         for (let row = 0; row < numberOfRows; row++) {
-            let yCoordinate = bubbleRadius * (row * 2 + 1);
 
             let randomNumber = Math.floor(Math.random() * bubbleColorPalette.length);
             let bubbleColor = bubbleColorPalette[randomNumber];
 
             // Create a circle element representing the bubble
+            let yCoordinate = bubbleRadius * (row * 2 + 1);
             let bubble = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             bubble.setAttribute("id", `${col}-${row}`);
             bubble.setAttribute("cx", xCoordinate);
@@ -33,29 +45,36 @@ function newGame() {
 
             // Add bubble to playing field (SVG)
             playingField.appendChild(bubble);
-
         }
-    }
 
+    }
 }
 
-let score = 0;
-let colorBlock = new Set();
-let colorClicked = "";
+// Finding bubble's position in grid
 
+function calculatePosition(svgBubble) {
+    let cx = parseFloat(svgBubble.getAttribute("cx"));
+    let cy = parseFloat(svgBubble.getAttribute("cy"));
+    let gridColumn = Math.round(((cx / bubbleRadius) - 1) / 2);
+    let gridRow = Math.round(((cy / bubbleRadius) - 1) / 2);
+    return [gridColumn, gridRow];
+}
+
+// Removing bubbles
 
 function bubbleClicked() {
     colorClicked = this.getAttribute("fill");
-    getAdjacents(this);
-    if (colorBlock.size > 1) {
-        console.log("Block: " + colorBlock.size);
-        colorBlock.forEach(element => {
-            element.setAttribute("fill", backgroundColor);
-            element.removeEventListener('click', bubbleClicked);
-        });
-        score += colorBlock.size * (colorBlock.size - 1);
-        document.getElementById("score").innerHTML = score;
-        //bubbleShift();
+    if (colorClicked != backgroundColor) {
+        getAdjacents(this);
+        if (colorBlock.size > 1) {
+            colorBlock.forEach(element => {
+                element.setAttribute("fill", backgroundColor);
+            });
+            score += colorBlock.size * (colorBlock.size - 1);
+            document.getElementById("score").innerHTML = score;
+            bubblesUp();
+
+        }
     }
     colorBlock = new Set();
     colorClicked = "";
@@ -64,13 +83,11 @@ function bubbleClicked() {
 function getAdjacents(startBubble) {
     if (!(colorBlock.has(startBubble))) {
         colorBlock.add(startBubble);
-        let bubbleId = startBubble.id;
-        console.log(bubbleId, colorClicked);
 
-        let startingX = parseInt(bubbleId.split("-")[0]);
-        //console.log(startingX);
-        let startingY = parseInt(bubbleId.split("-")[1]);
-        //console.log(startingY);
+        let gridPosition = calculatePosition(startBubble);
+        let startingX = gridPosition[0];
+        let startingY = gridPosition[1];
+
         lookUp(startingX, startingY);
         lookDown(startingX, startingY);
         lookLeft(startingX, startingY);
@@ -78,11 +95,10 @@ function getAdjacents(startBubble) {
     }
 }
 
-// Check if bubble above is of the same color as bubble clicked
+// Check if adjacent bubble is of the same color as the bubble clicked
 function lookUp(x, y) {
     if (y > 0) {
         let bubbleAbove = document.getElementById(`${x}-${y - 1}`);
-        console.log("on top:" + bubbleAbove.id);
         if (bubbleAbove.getAttribute("fill") == colorClicked) {
             getAdjacents(bubbleAbove);
         }
@@ -92,7 +108,6 @@ function lookUp(x, y) {
 function lookDown(x, y) {
     if (y < numberOfRows - 1) {
         let bubbleBelow = document.getElementById(`${x}-${y + 1}`);
-        console.log("below:" + bubbleBelow.id);
         if (bubbleBelow.getAttribute("fill") == colorClicked) {
             getAdjacents(bubbleBelow);
         }
@@ -102,7 +117,6 @@ function lookDown(x, y) {
 function lookLeft(x, y) {
     if (x > 0) {
         let bubbleToLeft = document.getElementById(`${x - 1}-${y}`);
-        console.log("to left:" + bubbleToLeft.id);
         if (bubbleToLeft.getAttribute("fill") == colorClicked) {
             getAdjacents(bubbleToLeft);
         }
@@ -112,16 +126,66 @@ function lookLeft(x, y) {
 function lookRight(x, y) {
     if (x < numberOfColumns - 1) {
         let bubbleToRight = document.getElementById(`${x + 1}-${y}`);
-        console.log("to right:" + bubbleToRight.id);
         if (bubbleToRight.getAttribute("fill") == colorClicked) {
             getAdjacents(bubbleToRight);
         }
     }
 }
 
-function bubbleShift() {
-    let remainingBubbles = document.querySelectorAll(circle);
-    remainingBubbles.forEach(element => {
-        // Now what???
+// Pull remaining bubbles together
+
+function bubblesUp() {
+    let bubblingColumns = {};
+    colorBlock.forEach(bubble => {
+        let bCol = calculatePosition(bubble)[0];
+        let bRow = calculatePosition(bubble)[1];
+
+        if (!bubblingColumns.hasOwnProperty(bCol)) {
+            bubblingColumns[bCol] = [];
+        }
+        bubblingColumns[bCol].push(bRow);
+
     });
+
+    for (let [col, gaps] of Object.entries(bubblingColumns)) {
+        gaps.sort((a, b) => b - a);
+        gaps.forEach(g => {
+            moveBubblesUpTo(col, g);
+        });
+        for (let i = 1; i <= gaps.length; i++) {
+            let empty = document.getElementById(`${col}-${numberOfRows - i}`);
+            empty.setAttribute("fill", backgroundColor);
+        }
+    }
+}
+
+function moveBubblesUpTo(x, y) {
+    if (y < numberOfRows - 1) {
+        let emptySpot = document.getElementById(`${x}-${y}`);
+        let movingBubble = document.getElementById(`${x}-${y + 1}`);
+        let tempColor = movingBubble.getAttribute("fill");
+
+        if (tempColor == backgroundColor) {
+            for (let i = y + 2; i < numberOfRows; i++) {
+                let nextBubble = document.getElementById(`${x}-${i}`);
+                if (nextBubble.getAttribute("fill") != backgroundColor) {
+                    movingBubble = nextBubble;
+                    tempColor = movingBubble.getAttribute("fill");
+                    break;  // exit for loop when the next bubble is found
+                }
+            }
+        }
+
+        emptySpot.setAttribute("fill", tempColor);
+        movingBubble.setAttribute("fill", backgroundColor);
+
+
+        moveBubblesUpTo(x, y + 1);
+    }
+}
+
+function shiftToLeft(emptyColumn) {
+    if (emptyColumn < numberOfColumns - 1) {
+
+    }
 }
