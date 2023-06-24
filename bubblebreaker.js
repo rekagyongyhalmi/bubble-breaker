@@ -1,14 +1,26 @@
-let bubbleColorPalette = ["red", "blue", "yellow"];
-let backgroundColor = "turquoise";
-const numberOfRows = 10;
-const numberOfColumns = 15;
 
 document.getElementById("new-game").addEventListener('click', newGame);
 let playingField = document.getElementById("playingfield");
+let svgDefs = document.getElementById("svg-defs");
+
+// Colors
+let backgroundColor = "white";
+let bubbleColorPalette = ["turquoise", "navy", "teal"];
+let style = document.querySelector("style");
+style.innerHTML = `.${backgroundColor}: {fill: ${backgroundColor}}`;
+createGradients();
+
+// Sizes
+const numberOfRows = 10;
+const numberOfColumns = 15;
+
 let bubbleRadius = (100 / numberOfColumns) / 2;
+let lightSpotRadius = bubbleRadius / 3;
 
 let bubblesArray = [];
 
+// Score
+let highScore = localStorage.getItem("highScore");
 let score = 0;
 let colorBlock = new Set();
 let colorClicked = "";
@@ -16,11 +28,40 @@ let rightColumn = numberOfColumns - 1;
 
 newGame();
 
+function createGradients() {
+    for (let i = 0; i < bubbleColorPalette.length; i++) {
+        let bColor = bubbleColorPalette[i];
+        let radialGradient = document.createElementNS("http://www.w3.org/2000/svg", "radialGradient");
+        radialGradient.setAttribute("id", `radial-gradient-${bColor}`);
+
+        radialGradient.setAttribute("cx", "70%");
+        radialGradient.setAttribute("cy", "30%");
+        radialGradient.setAttribute("r", "25%");
+
+        let stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+        stop1.setAttribute("offset", "0%");
+        stop1.setAttribute("stop-color", "white");
+        let stop2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+        stop2.setAttribute("offset", "100%");
+        stop2.setAttribute("stop-color", bColor);
+
+        radialGradient.appendChild(stop1);
+        radialGradient.appendChild(stop2);
+
+        svgDefs.appendChild(radialGradient);
+
+        style.innerHTML += `.${bColor} {fill: url(#radial-gradient-${bColor}); }`;
+    }
+
+}
+
 function newGame() {
 
     // Initial settings
     score = 0;
-    document.getElementById("score").innerHTML = score;
+    document.getElementById("score").textContent = score;
+    highScore = localStorage.getItem("highScore");
+    document.getElementById("highscore").textContent = highScore;
     colorBlock = new Set();
     bubblesArray = [];  // for logic
     colorClicked = "";
@@ -31,6 +72,7 @@ function newGame() {
     for (let col = 0; col < numberOfColumns; col++) {
         let bubblesColumn = [];     // for logic
         let xCoordinate = bubbleRadius * (col * 2 + 1); //for visual representation
+        let lightSpotx = xCoordinate + 1 / 3 * bubbleRadius;
 
         for (let row = 0; row < numberOfRows; row++) {
 
@@ -39,18 +81,21 @@ function newGame() {
 
             bubblesColumn.push(bubbleColor);    // for logic
 
-            // Create a circle element representing the bubble
+            // Create an SVG element representing the bubble
             let yCoordinate = bubbleRadius * (row * 2 + 1);
+            let lightSpotY = yCoordinate - 1 / 3 * bubbleRadius;
+
             let bubble = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             bubble.setAttribute("id", `${col}-${row}`);
             bubble.setAttribute("cx", xCoordinate);
             bubble.setAttribute("cy", yCoordinate);
             bubble.setAttribute("r", bubbleRadius);
-            bubble.setAttribute("fill", bubbleColor);
 
             bubble.addEventListener('click', bubbleClicked);
+            bubble.classList.add(bubbleColor);
 
             // Add bubble to playing field (SVG)
+            playingField.appendChild(svgDefs);
             playingField.appendChild(bubble);
         }
         // Add bubbles to array
@@ -69,7 +114,7 @@ function calculatePosition(svgBubble) {
 // Removing bubbles
 
 function bubbleClicked() {
-    colorClicked = this.getAttribute("fill");
+    colorClicked = this.classList[0];
     if (colorClicked != backgroundColor) {
         getAdjacents(this);
         if (colorBlock.size > 1) {
@@ -81,7 +126,14 @@ function bubbleClicked() {
             });
 
             score += colorBlock.size * (colorBlock.size - 1);
-            document.getElementById("score").innerHTML = score;
+            highScore = localStorage.getItem("highScore");
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("highScore", score);
+                document.getElementById("highscore").textContent = highScore;
+            }
+            document.getElementById("score").textContent = score;
+
 
             bubblesUp();
             shiftColumnsToLeft();
@@ -111,7 +163,7 @@ function getAdjacents(startBubble) {
 function lookUp(x, y) {
     if (y > 0) {
         let bubbleAbove = document.getElementById(`${x}-${y - 1}`);
-        if (bubbleAbove.getAttribute("fill") == colorClicked) {
+        if (bubbleAbove.classList[0] == colorClicked) {
             getAdjacents(bubbleAbove);
         }
     }
@@ -120,7 +172,7 @@ function lookUp(x, y) {
 function lookDown(x, y) {
     if (y < numberOfRows - 1) {
         let bubbleBelow = document.getElementById(`${x}-${y + 1}`);
-        if (bubbleBelow.getAttribute("fill") == colorClicked) {
+        if (bubbleBelow.classList[0] == colorClicked) {
             getAdjacents(bubbleBelow);
         }
     }
@@ -129,7 +181,7 @@ function lookDown(x, y) {
 function lookLeft(x, y) {
     if (x > 0) {
         let bubbleToLeft = document.getElementById(`${x - 1}-${y}`);
-        if (bubbleToLeft.getAttribute("fill") == colorClicked) {
+        if (bubbleToLeft.classList[0] == colorClicked) {
             getAdjacents(bubbleToLeft);
         }
     }
@@ -138,7 +190,7 @@ function lookLeft(x, y) {
 function lookRight(x, y) {
     if (x < numberOfColumns - 1) {
         let bubbleToRight = document.getElementById(`${x + 1}-${y}`);
-        if (bubbleToRight.getAttribute("fill") == colorClicked) {
+        if (bubbleToRight.classList[0] == colorClicked) {
             getAdjacents(bubbleToRight);
         }
     }
@@ -215,5 +267,6 @@ function shiftToColumn(i) {
 function updateBubbleColor(x, y, color) {
     bubblesArray[x][y] = color;
     let circle = document.getElementById(`${x}-${y}`);
-    circle.setAttribute("fill", color);
+    let oldColor = circle.classList[0];
+    circle.classList.replace(oldColor, color);
 }

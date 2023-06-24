@@ -2,14 +2,26 @@
 
 <head>
     <link rel="stylesheet" href="bubblebreaker.css">
+    <style></style>
 </head>
 
 <body>
-    <h1>Remove all bubbles!</h1>
-    <h2>Score: <span id="score">0</span><span><button id="new-game">New Game</button></span></h2>
-    <svg id="playingfield" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Bubbles come here -->
-    </svg>
+    <section>
+        <h1>Bubble Breaker</h1>
+        <h2>
+            <span>Score: <span id="score">0</span></span>
+            <span>High Score: <span id="highscore">0</span></span>
+            <span><button id="new-game">New Game</button></span>
+        </h2>
+    </section>
+    <section class="wrapper">
+        <svg id="playingfield" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Gradient definitions -->
+            <defs id="svg-defs">
+            </defs>
+            <!-- Bubbles come here -->
+        </svg>
+    </section>
 </body>
 <footer>
     <script src="bubblebreaker.js"></script>
