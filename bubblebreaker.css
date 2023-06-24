@@ -48,3 +48,11 @@ h2 {
 .white {
     fill: white;
 }
+
+#congrats {
+    font-size: 10rem;
+    font-family: cursive;
+    color: red;
+    text-align: center;
+    display: none;
+}

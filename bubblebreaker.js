@@ -13,6 +13,7 @@ createGradients();
 // Sizes
 const numberOfRows = 10;
 const numberOfColumns = 15;
+let remainingBubbles = numberOfColumns * numberOfRows;
 
 let bubbleRadius = (100 / numberOfColumns) / 2;
 let lightSpotRadius = bubbleRadius / 3;
@@ -25,6 +26,8 @@ let score = 0;
 let colorBlock = new Set();
 let colorClicked = "";
 let rightColumn = numberOfColumns - 1;
+
+let message = document.getElementById("congrats");
 
 newGame();
 
@@ -58,6 +61,8 @@ function createGradients() {
 function newGame() {
 
     // Initial settings
+    message.style.display = "none";
+    remainingBubbles = numberOfColumns * numberOfRows;
     score = 0;
     document.getElementById("score").textContent = score;
     highScore = localStorage.getItem("highScore");
@@ -126,21 +131,28 @@ function bubbleClicked() {
             });
 
             score += colorBlock.size * (colorBlock.size - 1);
-            highScore = localStorage.getItem("highScore");
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem("highScore", score);
-                document.getElementById("highscore").textContent = highScore;
+            updateScore();
+
+            remainingBubbles -= colorBlock.size;
+            if (remainingBubbles > 0) {
+                bubblesUp();
+                shiftColumnsToLeft();
             }
-            document.getElementById("score").textContent = score;
-
-
-            bubblesUp();
-            shiftColumnsToLeft();
+            else gameWon();
         }
     }
     colorBlock = new Set();
     colorClicked = "";
+}
+
+function updateScore() {
+    highScore = localStorage.getItem("highScore");
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem("highScore", score);
+        document.getElementById("highscore").textContent = highScore;
+    }
+    document.getElementById("score").textContent = score;
 }
 
 function getAdjacents(startBubble) {
@@ -269,4 +281,10 @@ function updateBubbleColor(x, y, color) {
     let circle = document.getElementById(`${x}-${y}`);
     let oldColor = circle.classList[0];
     circle.classList.replace(oldColor, color);
+}
+
+function gameWon() {
+    score += numberOfColumns * numberOfRows * 10;
+    updateScore();
+    message.style.display = "block";
 }
