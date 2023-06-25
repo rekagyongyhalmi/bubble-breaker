@@ -65,7 +65,7 @@ function newGame() {
     remainingBubbles = numberOfColumns * numberOfRows;
     score = 0;
     document.getElementById("score").textContent = score;
-    highScore = localStorage.getItem("highScore");
+    highScore = Math.max(localStorage.getItem("highScore"), 0);
     document.getElementById("highscore").textContent = highScore;
     colorBlock = new Set();
     bubblesArray = [];  // for logic
